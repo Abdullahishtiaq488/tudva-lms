@@ -1,0 +1,86 @@
+// This file is kept as a backup and is not used in the current implementation
+// It has been renamed to .bak to avoid TypeScript compilation errors
+
+import express, { Request, Response } from 'express';
+import { supabase } from '../config/supabase';
+import { AppDataSource } from '../config/database';
+
+const router = express.Router();
+
+// Test route for Supabase connection
+router.get('/supabase', async (req: Request, res: Response) => {
+  try {
+    const { data, error } = await supabase.from('_test_connection').select('*').limit(1);
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Supabase connection test failed',
+        error: error.message
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Supabase connection successful',
+      data
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: 'Supabase connection test failed',
+      error: error.message
+    });
+  }
+});
+
+// Test route for database connection
+router.get('/database', async (req: Request, res: Response) => {
+  try {
+    // Check if connection is initialized
+    if (!AppDataSource.isInitialized) {
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection not initialized'
+      });
+    }
+
+    // Try to query something simple
+    const result = await AppDataSource.query('SELECT NOW()');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Database connection successful',
+      data: result
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: 'Database connection test failed',
+      error: error.message
+    });
+  }
+});
+
+// Simple test route that doesn't require database access
+router.get('/ping', (req: Request, res: Response) => {
+  return res.status(200).json({
+    success: true,
+    message: 'pong',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Test route for environment variables
+router.get('/env', (req: Request, res: Response) => {
+  return res.status(200).json({
+    success: true,
+    database_uri_exists: !!process.env.DATABASE_URI,
+    supabase_url_exists: !!process.env.SUPABASE_URL,
+    supabase_key_exists: !!process.env.SUPABASE_ANON_KEY,
+    jwt_secret_exists: !!process.env.JWT_SECRET,
+    node_env: process.env.NODE_ENV || 'development'
+  });
+});
+
+export default router;

@@ -1,0 +1,71 @@
+// This file is kept as a backup and is not used in the current implementation
+// It has been renamed to .bak to avoid TypeScript compilation errors
+
+import express from 'express';
+import dotenv from 'dotenv';
+import { AppDataSource } from './config/database';
+import cors from 'cors';
+
+// Load environment variables
+dotenv.config();
+
+const PORT = process.env.PORT || 3001;
+const app = express();
+
+// Middleware
+app.use(express.json());
+app.use(cors());
+
+// Basic route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Backend is running!',
+    database: AppDataSource.isInitialized ? 'connected' : 'disconnected'
+  });
+});
+
+// Database test route
+app.get('/api/test/database', async (req, res) => {
+  try {
+    if (!AppDataSource.isInitialized) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Database connection not initialized' 
+      });
+    }
+
+    // Try to query something simple
+    const result = await AppDataSource.query('SELECT NOW()');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Database connection successful',
+      data: result
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Database connection test failed',
+      error: error.message
+    });
+  }
+});
+
+// Initialize database connection
+AppDataSource.initialize()
+  .then(() => {
+    console.log('Database connection initialized');
+    
+    // Start the server
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Error initializing database connection:', error);
+    
+    // Start the server anyway
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT} without database connection`);
+    });
+  });

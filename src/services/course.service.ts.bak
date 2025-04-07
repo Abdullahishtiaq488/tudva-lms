@@ -1,0 +1,1180 @@
+import { Course } from "../models/Course.model";
+import { Module } from "../models/Module.model";
+import { Slot } from "../models/Slot.model";
+import { SeminarDay } from "../models/SeminarDay.model";
+import { Lecture } from "../models/Lecture.model";
+import { AppDataSource } from "../config/database";
+import { FindManyOptions, In, Like } from "typeorm";
+import { AppError } from "../middleware/errorHandler.middleware";
+import { User, UserRole } from "../models/User.model";
+import { logActivity } from "./activityLog.service";
+import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
+import { uploadFile, getSignedUrl } from '../utils/supabaseStorage';
+import { FAQ } from "../models/FAQ.model";
+import { Tag } from "../models/Tag.model";
+
+// const courseRepository = AppDataSource.getRepository(Course);
+// const moduleRepository = AppDataSource.getRepository(Module);
+// const slotRepository = AppDataSource.getRepository(Slot);
+// const seminarDayRepository = AppDataSource.getRepository(SeminarDay);
+// const userRepository = AppDataSource.getRepository(User);
+// // const lectureRepository = AppDataSource.getRepository(Lecture);
+// console.log('Loader')
+
+
+// // --- Type Definitions ---
+// interface NewModuleData {
+//   title: string;
+//   description?: string;
+//   slotId?: string | null; // Allow null for removing the slot
+//   moduleNumber: number;
+// }
+
+// interface ExistingModuleData extends NewModuleData {
+//   id: string; // Existing modules *must* have an ID
+// }
+
+// type ModuleUpdateData = NewModuleData | ExistingModuleData;
+
+// // --- Service Functions ---
+
+// export const createCourse = async (
+//   title: string,
+//   shortDesription: string,
+//   category: string,
+//   level: string,
+//   language: string,
+//   format: string,
+//   modulesCount: number,
+//   description: string,
+//   req: any // Best practice: Use a more specific type than `any`
+// ) => {
+//   if (!title || !shortDesription || !format || !category || !level || !language || !modulesCount || !description) {
+//     throw new AppError("Missing required course details or modules.", 400);
+//   }
+
+//   const instructorId = req.user.userId;
+
+//   const instructor = await userRepository.findOneBy({ id: instructorId });
+//   if (!instructor) {
+//     throw new AppError("Instructor not found.", 404);
+//   }
+
+//   if (instructor.role !== "instructor" && instructor.role !== "admin") {
+//     throw new AppError("Unauthorized: Only instructors and admins can create courses.", 403);
+//   }
+
+//   // const seminarDay = await seminarDayRepository.findOneBy({ id: seminarDayId });
+//   // if (!seminarDay) {
+//   //     throw new AppError("Invalid seminar day ID.", 404);
+//   // }
+//   // if (!seminarDay.isActive) {
+//   //     throw new AppError("Selected seminar day is not active.", 400);
+//   // }
+
+//   // for (const module of modules) {
+//   //     if (module.slotId) {
+//   //         const slot = await slotRepository.findOneBy({ id: module.slotId });
+//   //         if (!slot) {
+//   //             throw new AppError(`Invalid slot ID: ${module.slotId}`, 400);
+//   //         }
+//   //         if (!slot.isActive) {
+//   //             throw new AppError(`Slot ${module.slotId} is not active.`, 400);
+//   //         }
+
+//   //         const conflictingCourse = await courseRepository.createQueryBuilder("course")
+//   //             .innerJoin("course.modules", "module")
+//   //             .innerJoin("module.slot", "slot")
+//   //             .where("course.seminarDay = :seminarDayId", { seminarDayId })
+//   //             .andWhere("module.slot = :slotId", { slotId: module.slotId })
+//   //             .andWhere("course.instructorId = :instructorId", { instructorId })
+//   //             .getOne();
+
+//   //         if (conflictingCourse) {
+//   //             throw new AppError(`Slot ${module.slotId} is already occupied by another course taught by this instructor.`, 409);
+//   //         }
+//   //     }
+//   // }
+
+//   const newCourse = courseRepository.create({
+//     title: title,
+//     short_description: shortDesription,
+//     description: description,
+//     category: category,
+//     level: level,
+//     language: language,
+//     format: format,
+//     modules_count: modulesCount,
+//     instructor_id: instructorId,
+//   });
+
+
+//   // for (const moduleData of modules) {
+//   //     const slot = moduleData.slotId ? await slotRepository.findOneBy({ id: moduleData.slotId }) : null;
+//   //     const newModule = moduleRepository.create({
+//   //         title: moduleData.title,
+//   //         description: moduleData.description,
+//   //         slot: slot,
+//   //         moduleNumber: moduleData.moduleNumber,
+//   //         course: newCourse,
+//   //     });
+//   //     newCourse.modules.push(newModule);
+
+//   // }
+
+//   const savedCourse = await courseRepository.save(newCourse);
+
+//   await logActivity("create", "Course", savedCourse.id, instructorId, { title: savedCourse.title }); // Pass instructorId
+
+//   return {
+//     success: true,
+//     message: "Course created successfully.",
+//     course: savedCourse,
+//   };
+// };
+
+
+// // export const getCourses = async (
+// //     page: number = 1,
+// //     pageSize: number = 10,
+// //     subject?: string,
+// //     format?: string,
+// //     seminarDayId?: string,
+// //     search?: string
+// // ) => {
+// //     const skip = (page - 1) * pageSize;
+// //     const where: FindManyOptions<Course>['where'] = {};
+
+// //     if (subject) {
+// //         where.subject = Like(`%${subject}%`);
+// //     }
+// //     if (format) {
+// //         where.format = format;
+// //     }
+// //     if (seminarDayId) {
+// //         where.seminarDay = { id: seminarDayId };
+// //     }
+// //     if (search) {
+// //         where.title = Like(`%${search}%`);
+// //     }
+
+// //     const [courses, total] = await courseRepository.findAndCount({
+// //         where,
+// //         relations: {
+// //             seminarDay: true,
+// //             modules: {
+// //                 slot: true,
+// //             }
+// //         },
+// //         skip,
+// //         take: pageSize,
+// //         order: { title: "ASC" }
+// //     });
+
+// //     return {
+// //         success: true,
+// //         courses,
+// //         total,
+// //         page,
+// //         pageSize,
+// //     };
+// // };
+// // export const getCourseById = async (courseId: string) => {
+// //     const course = await courseRepository.findOne({
+// //         where: { id: courseId },
+// //         relations: {
+// //             seminarDay: true,
+// //             modules: {
+// //                 slot: true
+// //             }
+// //         }
+// //     });
+// //     if (!course) {
+// //         throw new AppError("Course not found.", 404);
+// //     }
+// //     return { success: true, course };
+// // }
+
+
+// // Interface for the data *received* from the frontend.
+// interface LectureData {
+//   id: string;
+//   topicName: string;
+//   videoUrl: string;
+//   description: string;
+//   course: Course;
+//   course_id: string;
+
+// }
+
+// interface UpdateCourseData {
+//   id: string;
+//   color?: string;
+//   icon?: string;
+//   lectures?: LectureData[];
+//   title?: string;
+//   short_description?: string;
+//   description?: string;
+//   category?: string;
+//   level?: string;
+//   language?: string;
+//   modules_count?: number;
+//   course_type?: string;
+//   promo_video_url?: string;
+//   status?: string;
+// }
+
+// export const updateCourse = async (
+//   courseId: string,
+//   updateData: UpdateCourseData,
+//   req: any
+// ) => {
+//   const instructorId = req.user.userId;
+
+//   const instructor = await userRepository.findOneBy({ id: instructorId });
+//   if (!instructor) {
+//     throw new AppError("Instructor not found.", 404);
+//   }
+
+//   if (instructor.role !== UserRole.Instructor && instructor.role !== UserRole.Admin) {
+//     throw new AppError("Unauthorized: Only instructors/admins can update.", 403);
+//   }
+
+//   const course = await courseRepository.findOne({
+//     where: { id: courseId },
+//     relations: ['lectures'], // Load existing lectures
+//   });
+
+//   if (!course) {
+//     throw new AppError('Course not found', 404);
+//   }
+//   if (course.instructor_id !== req.user.userId && req.user.role !== UserRole.Admin) {
+//     throw new AppError('Unauthorized: You can only update your own courses.', 403);
+//   }
+
+
+//   return AppDataSource.manager.transaction(async transactionalEntityManager => {
+//     // Update basic course properties (no changes)
+//     if (updateData.color !== undefined) course.color = updateData.color;
+//     if (updateData.icon !== undefined) course.icon = updateData.icon;
+//     if (updateData.title !== undefined) course.title = updateData.title;
+//     if (updateData.short_description !== undefined) course.short_description = updateData.short_description;
+//     if (updateData.description !== undefined) course.description = updateData.description;
+//     if (updateData.category !== undefined) course.category = updateData.category;
+//     if (updateData.level !== undefined) course.level = updateData.level;
+//     if (updateData.language !== undefined) course.language = updateData.language;
+//     if (updateData.modules_count !== undefined) course.modules_count = updateData.modules_count;
+//     if (updateData.course_type !== undefined) course.course_type = updateData.course_type;
+//     if (updateData.promo_video_url !== undefined) course.promo_video_url = updateData.promo_video_url;
+
+//     // --- Handle Lectures ---
+//     // if (updateData.lectures && Array.isArray(updateData.lectures)) {  // Best practice check
+//     //   const existingLectureIds = course.lectures.map(lec => lec.id);
+//     //   const updatedLectureIds = updateData.lectures.filter(lec => lec.id).map(lec => lec.id!);
+//     //   const lecturesToDelete = existingLectureIds.filter(id => !updatedLectureIds.includes(id));
+
+//     //   // 1. Delete removed lectures
+//     //   if (lecturesToDelete.length > 0) {
+//     //     try {
+//     //       await transactionalEntityManager.withRepository(lectureRepository).delete({ id: In(lecturesToDelete) });
+//     //     } catch (deleteError) {
+//     //       console.error("Error deleting lectures:", deleteError); // Detailed logging
+//     //       throw new AppError("Failed to delete lectures.", 500); // Re-throw with more context
+//     //     }
+//     //   }
+
+
+//     //   // 2. Create or Update Lectures
+//     //   for (const lectureData of updateData.lectures) {
+//     //     let lecture: Lecture | undefined;
+//     //     if (lectureData.id) {
+//     //       // Update existing lecture
+//     //       lecture = course.lectures.find(lec => lec.id === lectureData.id);
+
+//     //       if (!lecture) {
+//     //         throw new AppError(`Lecture with ID ${lectureData.id} not found`, 404);
+//     //       }
+
+//     //       // Update properties
+//     //       lecture.topicName = lectureData.topicName; // Corrected
+//     //       lecture.videoUrl = lectureData.videoUrl; // Corrected
+//     //       lecture.title = lectureData.topicName || lecture.title;
+//     //       lecture.description = lectureData.description;
+
+//     //     } else {
+//     //       // Create new lecture
+//     //       lecture = lectureRepository.create({
+//     //         topicName: lectureData.topicName, // Corrected property name
+//     //         videoUrl: lectureData.videoUrl,   // Corrected property name
+//     //         title: lectureData.topicName || "",  // Provide a default title!
+//     //         description: lectureData.description,
+//     //         course: course,                 // Associate with the Course entity
+//     //         course_id: courseId,            // Set the course_id directly
+//     //       });
+//     //     }
+//     //     if (lecture) {
+//     //       try {
+//     //         await transactionalEntityManager.withRepository(lectureRepository).save(lecture);
+//     //       } catch (saveError) {
+//     //         console.error("Error saving lecture:", saveError, "Lecture Data:", lectureData);
+//     //         throw new AppError("Failed to save lecture.", 500);
+//     //       }
+//     //     }
+//     //   }
+//     // }
+
+//     const updatedCourse = await transactionalEntityManager.save(course);
+//     return updatedCourse;
+//   });
+// };
+
+// export const getCourseById = async (courseId: string) => {
+//   const course = await courseRepository.findOneBy({ id: courseId });
+
+//   if (!course) {
+//     throw new AppError('Course not found', 404);
+//   }
+
+//   return course;
+// };
+
+
+// //     const course = await courseRepository.findOne({
+// //         where: { id: courseId },
+// //         relations: {
+// //             modules: {
+// //                 slot: true
+// //             }
+// //         }
+// //     });
+
+// //     if (!course) {
+// //         throw new AppError("Course not found.", 404);
+// //     }
+
+// //     return { success: true, modules: course.modules };
+// // }
+// // export const getAllCoursesAdmin = async (page: number = 1, pageSize: number = 10, filters: any = {}): Promise<{ success: boolean; courses?: Course[]; total?: number; page?: number; pageSize?: number; error?: string; }> => {
+// //     const skip = (page - 1) * pageSize;
+
+// //     const where: FindManyOptions<Course>['where'] = {};
+
+// //     if (filters.subject) {
+// //         where.subject = Like(`%${filters.subject}%`);
+// //     }
+// //     if (filters.format) {
+// //         where.format = filters.format;
+// //     }
+// //     if (filters.seminarDayId) {
+// //         where.seminarDay = { id: filters.seminarDayId };
+// //     }
+// //     if (filters.instructorId) {
+// //         where.instructorId = filters.instructorId;
+// //     }
+
+// //     const relations: FindManyOptions<Course>['relations'] = {
+// //         seminarDay: true,
+// //         modules: {
+// //             slot: true,
+// //         },
+// //     };
+
+// //     try {
+// //         const [courses, total] = await courseRepository.findAndCount({
+// //             where,
+// //             relations,
+// //             skip,
+// //             take: pageSize,
+// //             order: { createdAt: "DESC" }
+// //         });
+// //         return { success: true, courses, total, page, pageSize };
+
+// //     } catch (error:any) {
+// //         console.error("Error fetching courses for admin:", error);
+// //         return {success: false, error: error.message}
+// //     }
+// // };
+// // export const deleteCourse = async (adminId: string, courseId: string): Promise<{ success: boolean; message?: string; error?: string; }> => {
+
+// //     const admin = await userRepository.findOneBy({ id: adminId });
+// //     if (!admin || admin.role !== "admin") {
+// //         throw new AppError("Unauthorized: Only admins can delete courses.", 403);
+// //     }
+
+// //     const course = await courseRepository.findOneBy({ id: courseId });
+// //     if (!course) {
+// //         throw new AppError("Course not found.", 404);
+// //     }
+
+// //     const deleteResult: DeleteResult = await courseRepository.delete(courseId);
+
+// //     if (deleteResult.affected === 0) {
+// //         return { success: false, error: "Failed to delete course." };
+// //     }
+
+// //     await logActivity("delete", "Course", course.id, adminId, { title: course.title }); // Pass adminId
+
+// //     return { success: true, message: "Course deleted successfully." };
+// // };
+
+
+
+
+
+
+
+
+
+// import { Course } from "../models/Course.model";
+// import { Module } from "../models/Module.model";
+// import { Slot } from "../models/Slot.model";
+// import { SeminarDay } from "../models/SeminarDay.model";
+// import { Lecture } from "../models/Lecture.model"; // Import Lecture model
+// import { AppDataSource } from "../config/database";
+// import { FindManyOptions, In, Like } from "typeorm";
+// import { AppError } from "../middleware/errorHandler.middleware";
+// import { User, UserRole } from "../models/User.model";
+// import { logActivity } from "./activityLog.service";
+// import { DeleteResult } from "typeorm";
+
+// console.log("Loader1");
+
+// // Initialize repositories
+// const courseRepository = AppDataSource.getRepository(Course);
+// const moduleRepository = AppDataSource.getRepository(Module);
+// const slotRepository = AppDataSource.getRepository(Slot);
+// const seminarDayRepository = AppDataSource.getRepository(SeminarDay);
+// const userRepository = AppDataSource.getRepository(User);
+// const lectureRepository = AppDataSource.getRepository(Lecture); // Add Lecture repository
+
+// console.log("Loader");
+
+// // --- Type Definitions ---
+// interface NewModuleData {
+//   title: string;
+//   description?: string;
+//   slotId?: string | null;
+//   moduleNumber: number;
+// }
+
+// interface ExistingModuleData extends NewModuleData {
+//   id: string;
+// }
+
+// type ModuleUpdateData = NewModuleData | ExistingModuleData;
+
+// // Interface for the data received from the frontend
+// interface LectureData {
+//   id?: string; // Optional for new lectures
+//   topicName: string;
+//   videoUrl: string;
+//   description: string;
+//   sortOrder?: number; // Optional field from Lecture model
+// }
+
+// interface UpdateCourseData {
+//   id?: string; // Optional since courseId is passed separately
+//   color?: string;
+//   icon?: string;
+//   lectures?: LectureData[]; // Updated to match frontend data
+//   title?: string;
+//   short_description?: string;
+//   description?: string;
+//   category?: string;
+//   level?: string;
+//   language?: string;
+//   modules_count?: number;
+//   course_type?: string;
+//   promo_video_url?: string;
+//   status?: string;
+// }
+
+// // --- Service Functions ---
+
+// export const createCourse = async (
+//   title: string,
+//   shortDesription: string,
+//   category: string,
+//   level: string,
+//   language: string,
+//   format: string,
+//   modulesCount: number,
+//   description: string,
+//   req: any
+// ) => {
+//   if (!title || !shortDesription || !format || !category || !level || !language || !modulesCount || !description) {
+//     throw new AppError("Missing required course details or modules.", 400);
+//   }
+
+//   const instructorId = req.user.userId;
+
+//   const instructor = await userRepository.findOneBy({ id: instructorId });
+//   if (!instructor) {
+//     throw new AppError("Instructor not found.", 404);
+//   }
+
+//   if (instructor.role !== "instructor" && instructor.role !== "admin") {
+//     throw new AppError("Unauthorized: Only instructors and admins can create courses.", 403);
+//   }
+
+//   const newCourse = courseRepository.create({
+//     title: title,
+//     short_description: shortDesription,
+//     description: description,
+//     category: category,
+//     level: level,
+//     language: language,
+//     format: format,
+//     modules_count: modulesCount,
+//     instructor_id: instructorId,
+//   });
+
+//   const savedCourse = await courseRepository.save(newCourse);
+
+//   await logActivity("create", "Course", savedCourse.id, instructorId, { title: savedCourse.title });
+
+//   return {
+//     success: true,
+//     message: "Course created successfully.",
+//     course: savedCourse,
+//   };
+// };
+
+// export const updateCourse = async (
+//   courseId: string,
+//   updateData: UpdateCourseData,
+//   req: any
+// ) => {
+//   const instructorId = req.user.userId;
+
+//   const instructor = await userRepository.findOneBy({ id: instructorId });
+//   if (!instructor) {
+//     throw new AppError("Instructor not found.", 404);
+//   }
+
+//   if (instructor.role !== UserRole.Instructor && instructor.role !== UserRole.Admin) {
+//     throw new AppError("Unauthorized: Only instructors/admins can update.", 403);
+//   }
+
+//   const course = await courseRepository.findOne({
+//     where: { id: courseId },
+//     relations: ["lectures"], // Load existing lectures
+//   });
+
+//   if (!course) {
+//     throw new AppError("Course not found", 404);
+//   }
+//   if (course.instructor_id !== req.user.userId && req.user.role !== UserRole.Admin) {
+//     throw new AppError("Unauthorized: You can only update your own courses.", 403);
+//   }
+
+//   return AppDataSource.manager.transaction(async (transactionalEntityManager) => {
+//     // Update basic course properties
+//     if (updateData.color !== undefined) course.color = updateData.color;
+//     if (updateData.icon !== undefined) course.icon = updateData.icon;
+//     if (updateData.title !== undefined) course.title = updateData.title;
+//     if (updateData.short_description !== undefined) course.short_description = updateData.short_description;
+//     if (updateData.description !== undefined) course.description = updateData.description;
+//     if (updateData.category !== undefined) course.category = updateData.category;
+//     if (updateData.level !== undefined) course.level = updateData.level;
+//     if (updateData.language !== undefined) course.language = updateData.language;
+//     if (updateData.modules_count !== undefined) course.modules_count = updateData.modules_count;
+//     if (updateData.course_type !== undefined) course.course_type = updateData.course_type;
+//     if (updateData.promo_video_url !== undefined) course.promo_video_url = updateData.promo_video_url;
+
+//     // Handle Lectures
+//     if (updateData.lectures && Array.isArray(updateData.lectures)) {
+//       const existingLectureIds = course.lectures.map((lec) => lec.id);
+//       const updatedLectureIds = updateData.lectures.filter((lec) => lec.id).map((lec) => lec.id!);
+//       const lecturesToDelete = existingLectureIds.filter((id) => !updatedLectureIds.includes(id));
+
+//       // 1. Delete removed lectures
+//       if (lecturesToDelete.length > 0) {
+//         try {
+//           await transactionalEntityManager
+//             .withRepository(lectureRepository)
+//             .delete({ id: In(lecturesToDelete) });
+//         } catch (deleteError) {
+//           console.error("Error deleting lectures:", deleteError);
+//           throw new AppError("Failed to delete lectures.", 500);
+//         }
+//       }
+
+//       // 2. Create or Update Lectures
+//       const updatedLectures = await Promise.all(
+//         updateData.lectures.map(async (lectureData) => {
+//           let lecture: Lecture;
+//           if (lectureData.id) {
+//             // Update existing lecture
+//             lecture = course.lectures.find((lec) => lec.id === lectureData.id)!;
+//             if (!lecture) {
+//               throw new AppError(`Lecture with ID ${lectureData.id} not found`, 404);
+//             }
+//             lecture.topicName = lectureData.topicName;
+//             lecture.videoUrl = lectureData.videoUrl;
+//             lecture.description = lectureData.description;
+//             lecture.sortOrder = lectureData.sortOrder ?? lecture.sortOrder; // Use existing sortOrder if not provided
+//             lecture.title = lectureData.topicName; // Set title to topicName
+//           } else {
+//             // Create new lecture
+//             lecture = lectureRepository.create({
+//               topicName: lectureData.topicName,
+//               videoUrl: lectureData.videoUrl,
+//               description: lectureData.description,
+//               sortOrder: lectureData.sortOrder ?? 0, // Default to 0 if not provided
+//               title: lectureData.topicName, // Set title to topicName
+//               course: course,
+//               course_id: courseId,
+//             });
+//           }
+//           return await transactionalEntityManager.withRepository(lectureRepository).save(lecture);
+//         })
+//       );
+
+//       // Update the course's lectures relation
+//       course.lectures = updatedLectures;
+//     }
+
+//     // Save the updated course
+//     const updatedCourse = await transactionalEntityManager.save(course);
+//     return {
+//       success: true,
+//       message: "Course updated successfully.",
+//       course: updatedCourse,
+//     };
+//   });
+// };
+
+// export const getCourseById = async (courseId: string) => {
+//   const course = await courseRepository.findOne({
+//     where: { id: courseId },
+//     relations: ["lectures"], // Include lectures in the response
+//   });
+
+//   if (!course) {
+//     throw new AppError("Course not found", 404);
+//   }
+
+//   return course;
+// };
+
+
+
+import { Course } from "../models/Course.model";
+import { Module } from "../models/Module.model";
+import { Slot } from "../models/Slot.model";
+import { SeminarDay } from "../models/SeminarDay.model";
+import { Lecture } from "../models/Lecture.model";
+import { AppDataSource } from "../config/database";
+import { FindManyOptions, In, Like } from "typeorm";
+import { AppError } from "../middleware/errorHandler.middleware";
+import { User, UserRole } from "../models/User.model";
+import { logActivity } from "./activityLog.service";
+import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
+import { uploadFile, getSignedUrl } from '../utils/supabaseStorage';
+import { FAQ } from "../models/FAQ.model"; // Import FAQ model
+import { Tag } from "../models/Tag.model"; // Import Tag model
+
+
+// Initialize repositories
+const courseRepository = AppDataSource.getRepository(Course);
+const moduleRepository = AppDataSource.getRepository(Module);
+const slotRepository = AppDataSource.getRepository(Slot);
+const seminarDayRepository = AppDataSource.getRepository(SeminarDay);
+const userRepository = AppDataSource.getRepository(User);
+const lectureRepository = AppDataSource.getRepository(Lecture);
+const faqRepository = AppDataSource.getRepository(FAQ); // Add FAQ repository
+const tagRepository = AppDataSource.getRepository(Tag); // Add Tag repository
+
+// Supabase storage bucket name
+const bucketName = process.env.SUPABASE_STORAGE_BUCKET || 'tudva-bucker';
+
+
+
+// --- Type Definitions ---
+interface NewModuleData {
+  title: string;
+  description?: string;
+  slotId?: string | null;
+  moduleNumber: number;
+}
+
+interface ExistingModuleData extends NewModuleData {
+  id: string;
+}
+
+type ModuleUpdateData = NewModuleData | ExistingModuleData;
+
+// Interface for the data received from the frontend
+export interface LectureData {
+  id?: string; // Optional for new lectures
+  topicName: string;
+  moduleName: string;
+  description: string;
+  sortOrder?: number; // Optional field from Lecture model
+  videoFile?: Buffer; // Video file buffer (from multer)
+}
+export interface FAQData {
+  id?: string; // Optional for new FAQs
+  question: string;
+  answer: string;
+  sortOrder?: number; // Optional field from FAQ model
+}
+
+// Interface for Tag data
+export interface TagData {
+  id?: string; // Optional for new tags
+  tagName: string;
+}
+
+export interface UpdateCourseData {
+  id?: string; // Optional since courseId is passed separately
+  color?: string;
+  icon?: string;
+  lectures?: LectureData[];
+  title?: string;
+  short_description?: string;
+  description?: string;
+  category?: string;
+  level?: string;
+  language?: string;
+  modules_count?: number;
+  course_type?: string;
+  promo_video_url?: string;
+  status?: string;
+  faqs?: FAQData[]; // Add FAQs
+  tags?: TagData[]; // Add Tags
+}
+
+
+
+export async function uploadVideoToGCS(file: Buffer, originalname: string): Promise<string> {
+  try {
+    const fileExtension = path.extname(originalname);
+    const contentType = getContentType(fileExtension);
+    const filename = `course-videos/${uuidv4()}${fileExtension}`;
+
+    // Use the Supabase storage utility to upload the file
+    const fileUrl = await uploadFile(file, 'course-videos', contentType, bucketName);
+
+    return fileUrl;
+  } catch (error: any) {
+    throw new Error(`Video upload error: ${error.message}`);
+  }
+}
+
+function getContentType(ext: string): string {
+  const contentTypes: Record<string, string> = {
+    '.mp4': 'video/mp4',
+    '.avi': 'video/x-msvideo',
+    '.mov': 'video/quicktime',
+    '.webm': 'video/webm',
+    // Add more video types as needed
+  };
+  return contentTypes[ext.toLowerCase()] || 'application/octet-stream';
+}
+
+export const createCourse = async (
+  title: string,
+  shortDesription: string,
+  category: string,
+  level: string,
+  language: string,
+  format: string,
+  modulesCount: number,
+  description: string,
+  faqs: FAQData[] | undefined, // Add FAQs parameter
+  tags: TagData[] | undefined, // Add Tags parameter
+  req: any
+) => {
+  if (!title || !shortDesription || !format || !category || !level || !language || !modulesCount || !description) {
+    throw new AppError("Missing required course details or modules.", 400);
+  }
+
+  const instructorId = req.user.userId;
+
+  const instructor = await userRepository.findOneBy({ id: instructorId });
+  if (!instructor) {
+    throw new AppError("Instructor not found.", 404);
+  }
+
+  if (instructor.role !== "instructor" && instructor.role !== "admin") {
+    throw new AppError("Unauthorized: Only instructors and admins can create courses.", 403);
+  }
+
+  const newCourse = courseRepository.create({
+    title: title,
+    short_description: shortDesription,
+    description: description,
+    category: category,
+    level: level,
+    language: language,
+    format: format,
+    modules_count: modulesCount,
+    instructor_id: instructorId,
+    status: "pending", // Default status
+  });
+
+  const savedCourse = await courseRepository.save(newCourse);
+
+  if (faqs && faqs.length > 0) {
+    const faqEntities = faqs.map((faq) => {
+      const faqEntity = faqRepository.create({
+        question: faq.question,
+        answer: faq.answer,
+        sortOrder: faq.sortOrder ?? 0,
+        course: savedCourse,
+        course_id: savedCourse.id,
+      });
+      return faqEntity;
+    });
+    await faqRepository.save(faqEntities);
+  }
+  // Save Tags
+  if (tags && tags.length > 0) {
+    const tagEntities = tags.map((tag) => {
+      const tagEntity = tagRepository.create({
+        tag_name: tag.tagName,
+        course: savedCourse,
+        course_id: savedCourse.id,
+      });
+      return tagEntity;
+    });
+    await tagRepository.save(tagEntities);
+  }
+
+  await logActivity("create", "Course", savedCourse.id, instructorId, { title: savedCourse.title });
+
+
+  // Fetch the course with relations
+  const courseWithRelations = await courseRepository.findOne({
+    where: { id: savedCourse.id },
+    relations: ["faqs", "tags", "instructor"],
+  });
+
+  return {
+    success: true,
+    message: "Course created successfully.",
+    course: savedCourse,
+  };
+};
+
+
+export const updateCourse = async (
+  courseId: string,
+  updateData: UpdateCourseData,
+  req: any
+) => {
+  const instructorId = req.user.userId;
+
+  const instructor = await userRepository.findOneBy({ id: instructorId });
+  if (!instructor) {
+    throw new AppError("Instructor not found.", 404);
+  }
+
+  if (instructor.role !== UserRole.Instructor && instructor.role !== UserRole.Admin) {
+    throw new AppError("Unauthorized: Only instructors/admins can update.", 403);
+  }
+
+  const course = await courseRepository.findOne({
+    where: { id: courseId },
+    relations: ["lectures", "faqs", "tags"],
+  });
+
+  if (!course) {
+    throw new AppError("Course not found", 404);
+  }
+  if (course.instructor_id !== req.user.userId && req.user.role !== UserRole.Admin) {
+    throw new AppError("Unauthorized: You can only update your own courses.", 403);
+  }
+
+  return AppDataSource.manager.transaction(async (transactionalEntityManager) => {
+    // Update basic course properties
+    if (updateData.color !== undefined) course.color = updateData.color;
+    if (updateData.icon !== undefined) course.icon = updateData.icon;
+    if (updateData.title !== undefined) course.title = updateData.title;
+    if (updateData.short_description !== undefined) course.short_description = updateData.short_description;
+    if (updateData.description !== undefined) course.description = updateData.description;
+    if (updateData.category !== undefined) course.category = updateData.category;
+    if (updateData.level !== undefined) course.level = updateData.level;
+    if (updateData.language !== undefined) course.language = updateData.language;
+    if (updateData.modules_count !== undefined) course.modules_count = updateData.modules_count;
+    if (updateData.course_type !== undefined) course.course_type = updateData.course_type;
+    if (updateData.promo_video_url !== undefined) course.promo_video_url = updateData.promo_video_url;
+
+    // Handle Lectures
+    if (updateData.lectures && Array.isArray(updateData.lectures)) {
+      const existingLectureIds = course.lectures.map((lec) => lec.id);
+      const updatedLectureIds = updateData.lectures.filter((lec) => lec.id).map((lec) => lec.id!);
+      const lecturesToDelete = existingLectureIds.filter((id) => !updatedLectureIds.includes(id));
+
+      console.log('Existing Lecture IDs:', existingLectureIds);
+      console.log('Updated Lecture IDs:', updatedLectureIds);
+      console.log('Lectures to Delete:', lecturesToDelete);
+
+      if (lecturesToDelete.length > 0) {
+        await transactionalEntityManager
+          .withRepository(lectureRepository)
+          .delete({ id: In(lecturesToDelete) });
+      }
+
+      const updatedLectures = await Promise.all(
+        updateData.lectures.map(async (lectureData) => {
+          let lecture: Lecture;
+          const existingLecture = lectureData.id
+            ? course.lectures.find((lec) => lec.id === lectureData.id)
+            : undefined;
+
+          if (existingLecture) {
+            // Update existing lecture
+            lecture = existingLecture;
+            lecture.moduleName = lectureData.moduleName ?? lecture.moduleName; // Add moduleName update
+            lecture.topicName = lectureData.topicName ?? lecture.topicName;
+            lecture.description = lectureData.description ?? lecture.description;
+            lecture.sortOrder = lectureData.sortOrder ?? lecture.sortOrder;
+            lecture.title = lectureData.topicName ?? lecture.title;
+
+            // Only update videoUrl if explicitly provided
+            if (lectureData.videoFile && typeof lectureData.videoFile === 'string') {
+              lecture.videoUrl = lectureData.videoFile; // Use URL from payload
+              console.log(`Updating lecture ${lecture.id} with videoUrl: ${lecture.videoUrl}`);
+            } else if (lectureData.videoFile instanceof Buffer) {
+              const uniqueFilename = `${Date.now()}-${lectureData.topicName}.mp4`;
+              lecture.videoUrl = await uploadVideoToGCS(lectureData.videoFile, uniqueFilename);
+              console.log(`Uploaded new video for lecture ${lecture.id}: ${lecture.videoUrl}`);
+            } // If no videoFile is provided, preserve the existing videoUrl
+          } else {
+            // Create new lecture
+            lecture = lectureRepository.create({
+              moduleName: lectureData.moduleName, // Add moduleName here
+              topicName: lectureData.topicName,
+              description: lectureData.description,
+              sortOrder: lectureData.sortOrder ?? 0,
+              title: lectureData.topicName,
+              course: course,
+              course_id: courseId,
+              videoUrl: typeof lectureData.videoFile === 'string' ? lectureData.videoFile : undefined,
+            });
+            if (lectureData.videoFile instanceof Buffer) {
+              const uniqueFilename = `${Date.now()}-${lectureData.topicName}.mp4`;
+              lecture.videoUrl = await uploadVideoToGCS(lectureData.videoFile, uniqueFilename);
+            }
+            console.log(`Created new lecture with videoUrl: ${lecture.videoUrl}`);
+          }
+          return await transactionalEntityManager.withRepository(lectureRepository).save(lecture);
+        })
+      );
+
+      course.lectures = updatedLectures;
+    }
+
+    // Handle FAQs (unchanged)
+    if (updateData.faqs && Array.isArray(updateData.faqs)) {
+      const existingFaqIds = course.faqs.map((faq) => faq.id);
+      const updatedFaqIds = updateData.faqs.filter((faq) => faq.id).map((faq) => faq.id!);
+      const faqsToDelete = existingFaqIds.filter((id) => !updatedFaqIds.includes(id));
+
+      if (faqsToDelete.length > 0) {
+        await transactionalEntityManager
+          .withRepository(faqRepository)
+          .delete({ id: In(faqsToDelete) });
+      }
+
+      const updatedFaqs = await Promise.all(
+        updateData.faqs.map(async (faqData) => {
+          let faq: FAQ;
+          const existingFaq = faqData.id ? course.faqs.find((f) => f.id === faqData.id) : undefined;
+
+          if (existingFaq) {
+            faq = existingFaq;
+            faq.question = faqData.question;
+            faq.answer = faqData.answer;
+            faq.sortOrder = faqData.sortOrder ?? faq.sortOrder;
+          } else {
+            faq = faqRepository.create({
+              question: faqData.question,
+              answer: faqData.answer,
+              sortOrder: faqData.sortOrder ?? 0,
+              course: course,
+              course_id: courseId,
+            });
+          }
+          return await transactionalEntityManager.withRepository(faqRepository).save(faq);
+        })
+      );
+      course.faqs = updatedFaqs;
+    }
+
+    // Handle Tags (unchanged)
+    if (updateData.tags && Array.isArray(updateData.tags)) {
+      const existingTagIds = course.tags.map((tag) => tag.id);
+      const updatedTagIds = updateData.tags.filter((tag) => tag.id).map((tag) => tag.id!);
+      const tagsToDelete = existingTagIds.filter((id) => !updatedTagIds.includes(id));
+
+      if (tagsToDelete.length > 0) {
+        await transactionalEntityManager
+          .withRepository(tagRepository)
+          .delete({ id: In(tagsToDelete) });
+      }
+
+      const updatedTags = await Promise.all(
+        updateData.tags.map(async (tagData) => {
+          let tag: Tag;
+          const existingTag = tagData.id ? course.tags.find((t) => t.id === tagData.id) : undefined;
+
+          if (existingTag) {
+            tag = existingTag;
+            tag.tag_name = tagData.tagName;
+          } else {
+            tag = tagRepository.create({
+              tag_name: tagData.tagName,
+              course: course,
+              course_id: courseId,
+            });
+          }
+          return await transactionalEntityManager.withRepository(tagRepository).save(tag);
+        })
+      );
+      course.tags = updatedTags;
+    }
+
+    const updatedCourse = await transactionalEntityManager.save(course);
+    console.log('Updated course lectures:', updatedCourse.lectures);
+    return {
+      success: true,
+      message: "Course updated successfully.",
+      course: updatedCourse,
+    };
+  });
+};
+
+// export const getCourseById = async (courseId: string) => {
+//   const courseRepository = AppDataSource.getRepository(Course);
+//   const course = await courseRepository.findOne({
+//     where: { id: courseId },
+//     relations: ['lectures', 'faqs', 'tags', "instructor"],
+//   });
+
+//   if (!course) {
+//     throw new AppError('Course not found', 404);
+//   }
+
+//   return {
+//     success: true,
+//     course,
+//   };
+// };
+
+
+export const getCourseById = async (courseId: string) => {
+  const courseRepository = AppDataSource.getRepository(Course);
+
+  // Fetch the course with related entities
+  const course = await courseRepository.findOne({
+    where: { id: courseId },
+    relations: ['lectures', 'faqs', 'tags', 'instructor'],
+  });
+
+  if (!course) {
+    throw new AppError('Course not found', 404);
+  }
+
+  // Group lectures by moduleName
+  const modules = course.lectures.reduce((acc, lecture) => {
+    const moduleName = lecture.moduleName || 'Uncategorized'; // Default to 'Uncategorized' if moduleName is null
+    if (!acc[moduleName]) {
+      acc[moduleName] = [];
+    }
+    acc[moduleName].push({
+      id: lecture.id,
+      title: lecture.title,
+      topicName: lecture.topicName,
+      description: lecture.description,
+      videoUrl: lecture.videoUrl,
+      sortOrder: lecture.sortOrder,
+      createdAt: lecture.createdAt,
+      updatedAt: lecture.updatedAt,
+    });
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  // Sort lectures within each module by sortOrder (if provided)
+  Object.keys(modules).forEach((moduleName) => {
+    modules[moduleName].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  });
+
+  return {
+    success: true,
+    course: {
+      id: course.id,
+      title: course.title, // Add other course fields as needed
+      description: course.description,
+      modules_count: course.modules_count,
+      short_description: course.short_description,
+      category: course.category,
+      format: course.format,
+      instructor: course.instructor,
+      tags: course.tags,
+      faqs: course.faqs,
+      createdAt: course.createdAt,
+      updatedAt: course.updatedAt,
+    },
+    modules, // Grouped lectures as modules
+  };
+};
+
+export const getCourses = async (
+  page: number = 1,
+  pageSize: number = 10,
+  subject?: string,
+  format?: string,
+  seminarDayId?: string,
+  search?: string
+) => {
+  const courseRepository = AppDataSource.getRepository(Course);
+
+  // Build the query
+  const query = courseRepository.createQueryBuilder("course")
+    .leftJoinAndSelect("course.lectures", "lectures")
+    .leftJoinAndSelect("course.faqs", "faqs")
+    .leftJoinAndSelect("course.tags", "tags");
+
+  // Apply filters
+  if (subject) {
+    query.andWhere("course.category = :subject", { subject });
+  }
+  if (format) {
+    query.andWhere("course.format = :format", { format });
+  }
+  if (seminarDayId) {
+    query.andWhere("course.seminarDayId = :seminarDayId", { seminarDayId });
+  }
+  if (search) {
+    query.andWhere(
+      "(course.title LIKE :search OR course.short_description LIKE :search OR course.description LIKE :search)",
+      { search: `%${search}%` }
+    );
+  }
+
+  // Pagination
+  const skip = (page - 1) * pageSize;
+  const take = pageSize;
+
+  // Execute query to get courses and total count
+  const [courses, total] = await query
+    .skip(skip)
+    .take(take)
+    .orderBy("course.createdAt", "DESC") // Sort by creation date, descending
+    .getManyAndCount();
+
+  return {
+    success: true,
+    courses,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+};

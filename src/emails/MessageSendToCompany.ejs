@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+<head>
+  <link rel="preload" as="image" href="<%= logoUrl %>" />
+  <meta content="text/html; charset=UTF-8" http-equiv="Content-Type" />
+  <meta name="x-apple-disable-message-reformatting" />
+</head>
+<body style="background-color:#f6f9fc;padding:10px 0">
+  <table
+    align="center"
+    width="100%"
+    border="0"
+    cellpadding="0"
+    cellspacing="0"
+    role="presentation"
+    style="max-width:37.5em;background-color:#ffffff;border:1px solid #f0f0f0;padding:45px"
+  >
+    <tr>
+      <td>
+        <img
+          alt="Dropbox"
+          height="33"
+          src="<%= logoUrl %>"
+          style="display:block;outline:none;border:none;text-decoration:none"
+          width="40"
+        />
+        <p style="font-size:16px;line-height:26px;margin:16px 0;font-family:'Open Sans', Arial, sans-serif;font-weight:300;color:#404040">
+          Dear Busnet Limited Team,
+        </p>
+        <p style="font-size:16px;line-height:26px;margin:16px 0;font-family:'Open Sans', Arial, sans-serif;font-weight:300;color:#404040">
+          You have received a new message from <strong><%= username %></strong>. Below are the details:
+        </p>
+        <table style="font-size:16px;line-height:26px;margin:16px 0;font-family:'Open Sans', Arial, sans-serif;font-weight:300;color:#404040;width:100%;border-collapse:collapse">
+          <tr>
+            <td style="padding:8px; border:1px solid #e0e0e0; color:#404040"><strong>Email Address:</strong></td>
+            <td style="padding:8px; border:1px solid #e0e0e0; color:#404040"><%= email %></td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid #e0e0e0; color:#404040"><strong>Phone Number:</strong></td>
+            <td style="padding:8px; border:1px solid #e0e0e0; color:#404040"><%= phoneNumber %></td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid #e0e0e0; color:#404040"><strong>Company Name:</strong></td>
+            <td style="padding:8px; border:1px solid #e0e0e0; color:#404040"><%= companyName %></td>
+          </tr>
+        </table>
+        <p style="font-size:16px;line-height:26px;margin:16px 0;font-family:'Open Sans', Arial, sans-serif;font-weight:300;color:#404040">
+          Below is the message they sent:
+        </p>
+        <p style="font-size:16px;line-height:26px;margin:16px 0;font-family:'Open Sans', Arial, sans-serif;font-weight:300;color:#404040">
+          <%= message %>
+        </p>
+        <p style="font-size:16px;line-height:26px;margin:16px 0;font-family:'Open Sans', Arial, sans-serif;font-weight:300;color:#404040">
+          Thank you for your attention to this matter.
+        </p>        
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
